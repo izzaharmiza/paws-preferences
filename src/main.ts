@@ -28,7 +28,7 @@ const GRID     = document.getElementById('liked-grid') as HTMLElement;
 const BAR      = document.getElementById('progress-bar') as HTMLDivElement;
 const BTN_AGAIN= document.getElementById('btn-restart') as HTMLButtonElement;
 
-const MEOW_SOUND = new Audio(new URL('./meow.mp3', import.meta.url).toString());
+const MEOW_SOUND = new Audio(new URL('../public/meow.mp3', import.meta.url).toString());
 /* -------------------- state -------------------- */
 let cats: CatJson[] = [];
 let liked: string[] = [];
