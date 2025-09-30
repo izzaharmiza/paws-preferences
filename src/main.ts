@@ -12,6 +12,14 @@ const API = 'https://cataas.com';
 const DEFAULT_TOTAL = 15;
 const COUNTED_FLAG = 'counted';
 
+const CAT_PROFILES = [
+  { name: "Whiskers", fact: "Loves chasing laser pointers.", personality: "Playful" },
+  { name: "Mittens", fact: "Sleeps 16 hours a day.", personality: "Chill" },
+  { name: "Tiger", fact: "Enjoys climbing curtains.", personality: "Adventurous" },
+  { name: "Shadow", fact: "Hides in boxes.", personality: "Curious" },
+  { name: "Luna", fact: "Purrs loudly when happy.", personality: "Affectionate" },
+];
+
 /* -------------------- DOM refs -------------------- */
 const STACK    = document.getElementById('stack') as HTMLDivElement;
 const SUMMARY  = document.getElementById('summary') as HTMLElement;
@@ -20,6 +28,7 @@ const GRID     = document.getElementById('liked-grid') as HTMLElement;
 const BAR      = document.getElementById('progress-bar') as HTMLDivElement;
 const BTN_AGAIN= document.getElementById('btn-restart') as HTMLButtonElement;
 
+const MEOW_SOUND = new Audio('/meow.mp3');
 /* -------------------- state -------------------- */
 let cats: CatJson[] = [];
 let liked: string[] = [];
@@ -39,9 +48,12 @@ async function fetchCat(): Promise<CatJson> {
 }
 
 async function loadCats(n = DEFAULT_TOTAL) {
+  // show loading
+  document.getElementById('loading-screen')!.style.display = 'flex';
+  
   finished = false;
   SUMMARY.hidden = true;
-  STACK.style.display = '';
+  STACK.style.display = 'none'; // hide cards for now
   cats = [];
   liked = [];
   processed = 0;
@@ -58,9 +70,8 @@ async function loadCats(n = DEFAULT_TOTAL) {
 
   totalCount = cats.length;
   processed = 0;
-  updateProgress(0);
 
-  // preload
+  // preload images
   await Promise.all(
     cats.map(
       c =>
@@ -72,6 +83,9 @@ async function loadCats(n = DEFAULT_TOTAL) {
     ),
   );
 
+  // hide loading and show stack
+  document.getElementById('loading-screen')!.style.display = 'none';
+  STACK.style.display = '';
   renderStack();
 }
 
@@ -106,6 +120,17 @@ function renderStack() {
     img.src = `${c.url}?width=900&height=1200`;
     imgWrap.appendChild(img);
     card.appendChild(imgWrap);
+
+     // profile
+    const profile = CAT_PROFILES[Math.floor(Math.random() * CAT_PROFILES.length)];
+    const profileDiv = document.createElement('div');
+    profileDiv.className = 'cat-profile';
+    profileDiv.innerHTML = `
+      <div><strong>Name:</strong> ${profile.name}</div>
+      <div><strong>Personality:</strong> ${profile.personality}</div>
+      <div><em>${profile.fact}</em></div>
+    `;
+    card.appendChild(profileDiv);
 
     // actions
     const actions = document.createElement('div');
@@ -154,7 +179,7 @@ function attachDrag(card: HTMLDivElement) {
     (t as HTMLElement | null)?.closest?.('.card-actions') != null;
 
   const onDown = (e: PointerEvent) => {
-    if (isFromButtons(e.target)) return; // ignore button clicks
+    if (isFromButtons(e.target)) return; 
     dragging = true;
     card.setPointerCapture(e.pointerId);
     sx = e.clientX; sy = e.clientY;
@@ -172,12 +197,21 @@ function attachDrag(card: HTMLDivElement) {
   };
 
   const finalize = (isLike: boolean) => {
-    card.classList.remove('moving');
-    const url = card.dataset.url;
-    if (isLike && url) liked.push(url);
-    card.remove();
-    if (STACK.children.length === 0 || processed >= totalCount) showSummary();
-  };
+  card.classList.remove('moving');
+  const url = card.dataset.url;
+
+  if (isLike && url) liked.push(url);
+
+  // add effects on like
+  if (isLike) {
+    MEOW_SOUND.currentTime = 0;
+    MEOW_SOUND.play().catch(() => {}); 
+    showConfetti();
+  }
+
+  card.remove();
+  if (STACK.children.length === 0 || processed >= totalCount) showSummary();
+};
 
   const onUp = () => {
     if (!dragging) return;
@@ -220,10 +254,15 @@ function programmaticSwipe(like: boolean) {
   if (!top) return;
 
   const url = top.dataset.url || null;
-
   bumpProgress(top);
 
   requestAnimationFrame(() => {
+    if (like) {
+      MEOW_SOUND.currentTime = 0;
+      MEOW_SOUND.play().catch(() => {});
+      showConfetti();
+    }
+
     top.classList.add(like ? 'swipe-right' : 'swipe-left');
     top.addEventListener('transitionend', () => {
       if (like && url) liked.push(url);
@@ -238,6 +277,22 @@ function programmaticSwipe(like: boolean) {
       if (STACK.children.length === 0 || processed >= totalCount) showSummary();
     }, 350);
   });
+}
+
+/* -------------------- confetti -------------------- */
+function showConfetti() {
+  const confetti = document.createElement('div');
+  confetti.className = 'confetti';
+  confetti.innerHTML = '🎉';
+  confetti.style.position = 'fixed';
+  confetti.style.left = '50%';
+  confetti.style.top = '55%';
+  confetti.style.fontSize = '5rem';
+  confetti.style.transform = 'translate(-50%, -50%)';
+  confetti.style.pointerEvents = 'none';
+  confetti.style.zIndex = '9999';
+  document.body.appendChild(confetti);
+  setTimeout(() => confetti.remove(), 1200);
 }
 
 /* -------------------- summary -------------------- */
