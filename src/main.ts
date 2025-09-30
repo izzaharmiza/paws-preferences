@@ -53,7 +53,7 @@ async function loadCats(n = DEFAULT_TOTAL) {
   
   finished = false;
   SUMMARY.hidden = true;
-  STACK.style.display = 'none'; // hide cards for now
+  STACK.style.display = 'none'; 
   cats = [];
   liked = [];
   processed = 0;
