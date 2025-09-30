@@ -2,7 +2,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: '/paws-preferences/',
+  base: '/pawmatch_web/',
   server: {
     host: true,          
     port: 5173           
